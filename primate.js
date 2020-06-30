@@ -16,20 +16,26 @@ const primate = (function(){
         // way to do this.
         return window['gorillaClient'] != undefined;
     }
+
+    window['mute_primate'] = false;
+    function mute() {window['mute_primate'] = true;};
+    function unmute() {window['mute_primate'] = false;};
     function say(x, monkey=true){
-        // Cuter logging - 🦍 🙉 🐒
-        if(monkey){
-            // Speaker is a gorilla if running on Gorilla.
-            // Otherwise, it's a monkey. Fun, no?
-            let icon = is_gorilla() ? '🦍: ' : '🙉: ';
-            console.log(icon + x);
-        } else {
-            console.log(x);
+        if(window['mute_primate']==false){
+            // Cuter logging - 🦍 🙉 🐒
+            if(monkey){
+                // Speaker is a gorilla if running on Gorilla.
+                // Otherwise, it's a monkey. Fun, no?
+                let icon = is_gorilla() ? '🦍: ' : '🙉: ';
+                console.log(icon + x);
+            } else {
+                console.log(x);
+            }
         }
     }
 
+    // Start of core functions
     function ready(cb){
-        // Just call the callback when the document is ready.
         say(`Setting '${cb.name}()' to run once page is ready.`);
         if(is_gorilla()){
             gorilla.ready(cb);
@@ -55,7 +61,6 @@ const primate = (function(){
                 say('This is the default value. Coincidence, or bug?');
             }
         } else{
-            // say('Not running on Gorilla, so can\'t get manipulations.');
             say(`Using default: ${string} = ${def}`);
             val = def;
         }
@@ -73,7 +78,7 @@ const primate = (function(){
         if(type_string=='boolean') { return Boolean(value); }
     }
 
-    function store(key, value, global){
+    function store(key, value, global=true){
         say(`Storing ${key} = ${value} (global = ${global})`);
         if(is_gorilla()){
             gorilla.store(key, value, global);
@@ -90,17 +95,22 @@ const primate = (function(){
         }
     }
 
-    function retrieve(key, global){
+    function retrieve(key, def=undefined, global=true){
         say(`Retrieving value of ${key} (global = ${global})`);
-        if(is_gorilla){
-            let val = gorilla.retrieve(key, global);
+        let val;
+        if(is_gorilla()){
+            val = gorilla.retrieve(key, def, global);
         } else {
             say('...falling back to localStorage');
             let type_string = localStorage[key + '_type'];
-            let val = localStorage[key];
+            val = localStorage[key];
             val = _to_type(val, type_string);
         }
         say(`${key} = ${val}`);
+        if(typeof val == 'undefined') {
+            say(`...Replacing with default value: ${def}`);
+            val = def;
+        }
         return val;
     }
 
@@ -110,26 +120,27 @@ const primate = (function(){
         if(is_gorilla()){
             gorilla.metric(results);
         } else {
-            console.log('...falling back to AJAX');
+            say('...falling back to AJAX');
             $.ajax({
                 type: 'POST',
                 url: 'log.php',
-                data: results,
+                data: JSON.stringify(results),
                 success: function(res) { console.log(res); }
             });
         }
     }
 
     function stimuliURL(name){
-        say(`Getting stimulus url for '{name}'`);
+        say(`Getting stimulus url for '${name}'`);
         if(is_gorilla()){
-            return gorilla.stimuliURL(name);
+            let url = gorilla.stimuliURL(name);
+            say('Found ' + url);
+            return url;
         } else {
-            say(`Falling back to 'static/stimuli/${name}`);
-            return 'static/stimuli/' + name;
+            say(`...falling back to 'stimuli/${name}`);
+            return 'stimuli/' + name;
         }
     }
-
 
     function fy_shuffle(array) {
         // Fisher-Yates algorithm in pure JavaScript, from
@@ -157,7 +168,7 @@ const primate = (function(){
         }
     }
 
-    function populate(element, template, content){
+    function populate(element, template, content={}){
         if(is_gorilla()){
             say(`Populating ${element} with template '${template}`);
             say(`(Contents: ${content})`);
@@ -211,6 +222,8 @@ const primate = (function(){
     }
 
     let exports = {
+        mute: mute, unmute: unmute,
+        say: say,
         is_gorilla: is_gorilla,
         ready : ready,
         manipulation : manipulation,
@@ -222,7 +235,8 @@ const primate = (function(){
         shuffle : shuffle,
         populate : populate,
         populateAndLoad : populateAndLoad,
-        finish: finish
+        finish: finish,
+        version: '0.0.1'
     };
     return exports;
 })();
