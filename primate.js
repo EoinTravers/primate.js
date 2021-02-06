@@ -38,7 +38,11 @@ const primate = (function(){
     function ready(cb){
         say(`Setting '${cb.name}()' to run once page is ready.`);
         if(is_gorilla()){
-            gorilla.ready(cb);
+            gorilla.ready(function(){
+                // If on Gorilla, load the 'body' template now.
+                primate.populate('#gorilla', 'body', {});
+                cb();
+            });
         } else {
             if (document.readyState === 'complete') {
                 // We're already ready
@@ -169,6 +173,10 @@ const primate = (function(){
     }
 
     function populate(element, template, content={}){
+        // Note that if you're running on Gorilla,
+        // the primate.ready() function already calls
+        // > gorilla.populate('#gorilla', 'body', {});
+        // when the page loads.
         if(is_gorilla()){
             say(`Populating ${element} with template '${template}`);
             say(`(Contents: ${content})`);
