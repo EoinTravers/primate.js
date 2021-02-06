@@ -8,7 +8,7 @@
 // See https://gorilla.sc/support/api/gorilla for documentation on the
 // original API. Note that primate.finish() does not work in the same
 // way as gorilla.finish(). See the code below for details.
-
+const VERSION = '0.0.2';
 const primate = (function(){
     function is_gorilla(){
         // To test whether we're running on Gorilla, we just test if
@@ -118,19 +118,30 @@ const primate = (function(){
         return val;
     }
 
+
+    function _deep_copy(object){
+        // (Not exported)
+        return JSON.parse(JSON.stringify(object));
+    }
+
     function metric(results){
+        let copied_results = _deep_copy(results);
         say('Sending these metrics to the server:');
-        console.log(results);
+        say(results);
         if(is_gorilla()){
-            gorilla.metric(results);
+            gorilla.metric(copied_results);
         } else {
-            say('...falling back to AJAX');
-            $.ajax({
-                type: 'POST',
-                url: 'log.php',
-                data: JSON.stringify(results),
-                success: function(res) { console.log(res); }
-            });
+            // If page is a local file, do nothing
+            if(window.location.protocol == 'file:'){
+                say('Local file: Nowhere to send data');
+            } else {
+                $.ajax({
+                    type: 'POST',
+                    url: 'log.php',
+                    data: JSON.stringify(copied_results),
+                    success: function(res) { say(res); }
+                });
+            }
         }
     }
 
@@ -244,7 +255,7 @@ const primate = (function(){
         populate : populate,
         populateAndLoad : populateAndLoad,
         finish: finish,
-        version: '0.0.1'
+        version: VERSION
     };
     return exports;
 })();
